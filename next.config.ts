@@ -5,7 +5,7 @@ const withPWA = withPWAInit({
   dest: "public",
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
-  disable: false,
+  disable: true,
 });
 
 const nextConfig: NextConfig = {};
