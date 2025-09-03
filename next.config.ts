@@ -23,7 +23,7 @@ const withPWA = withPWAInit({
     document: '/~offline',
   },
   extendDefaultRuntimeCaching: true,
-  disable: false,
+  disable: true,
 
   workboxOptions: {
     disableDevLogs: true,
