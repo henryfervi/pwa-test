@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { saveData, getAllData } from "./lib/indexedDb";
+import Link from "next/link";
 
 export default function Home() {
   const [items, setItems] = useState<string[]>([]);
@@ -28,6 +29,9 @@ export default function Home() {
 
   return (
     <main className="p-6">
+      <button>
+        <Link href="/other-page">Go to OTHER PAGE</Link>
+      </button>
       <h1 className="text-2xl font-bold">Offline Notes</h1>
 
       <div className="mt-4 flex gap-2">
