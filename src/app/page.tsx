@@ -6,8 +6,12 @@ import { saveData, getAllData } from "./lib/indexedDb";
 export default function Home() {
   const [items, setItems] = useState<string[]>([]);
   const [newItem, setNewItem] = useState("");
-
   useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready.then(() => {
+        console.log("✅ Service Worker listo (Next-PWA)");
+      });
+    }
     (async () => {
       const saved = await getAllData<string>();
       setItems(saved);

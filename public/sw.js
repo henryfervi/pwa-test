@@ -1,52 +1,55 @@
-const CACHE_NAME = "mi-app-cache-v1";
+const CACHE_NAME = 'my-pwa-cache-v1';
+const OFFLINE_URL = '/offline.html';
+const PRECACHE_URLS = [
+  '/',
+  OFFLINE_URL,
+  '/manifest.json',
+  '/favicon.ico'
+];
 
-self.addEventListener("install", (event) => {
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll([
-        "/",             // homepage
-        "/favicon.ico", 
-        "/_next/webpack-hmr" // recursos fijos
-        // agrega imágenes u otros assets fijos si quieres
-      ]);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => key !== CACHE_NAME && caches.delete(key))
-      )
-    )
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      }))
+    ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener("fetch", (event) => {
-  // Para navegación y assets
+self.addEventListener('fetch', event => {
+  // navegaciones (requests HTML)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).then(networkResponse => {
+        // actualiza cache con la página navegada
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse.clone()));
+        return networkResponse;
+      }).catch(() => caches.match(OFFLINE_URL))
+    );
+    return;
+  }
+
+  // para otros recursos: cache-first con fallback a network
   event.respondWith(
-    caches.match(event.request).then((cachedResp) => {
-      if (cachedResp) {
-        // ⚡ Devuelve lo que está cacheado
-        return cachedResp;
-      }
-      // Si no está cacheado, intenta red
-      return fetch(event.request)
-        .then((response) => {
-          // Guarda en cache para la próxima
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, response.clone());
-            return response;
-          });
-        })
-        .catch(() => {
-          // Si no hay red y no está cacheado, devuelve algo neutro
-          return new Response(
-            "<h1>Sin conexión y recurso no cacheado</h1>",
-            { headers: { "Content-Type": "text/html" } }
-          );
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request).then(response => {
+        // guarda en cache los archivos obtenidos
+        return caches.open(CACHE_NAME).then(cache => {
+          try { cache.put(event.request, response.clone()); } catch (e) {}
+          return response;
         });
+      }).catch(() => {
+        // si falla (p.ej. imagen en offline), podrías devolver una imagen placeholder
+      });
     })
   );
 });
